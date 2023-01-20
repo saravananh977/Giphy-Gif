@@ -4,6 +4,7 @@ package com.sara.giphygif.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.sara.giphygif.data.entities.GifEntity
+import com.sara.giphygif.data.localdb.AppDao
 import com.sara.giphygif.data.localdb.AppDb
 import com.sara.giphygif.data.network.ApiInterface
 import com.sara.giphygif.domain.ResponseState
@@ -17,11 +18,11 @@ import javax.inject.Inject
 
 class GifRepositoryImpl @Inject constructor(
     val apiInterface: ApiInterface,
-    val urlUtils: UrlUtils, val appDao: AppDb
+    val urlUtils: UrlUtils, val appDao: AppDao
 ) : GifRepository {
 
     @RequiresApi(Build.VERSION_CODES.M)
-    override suspend fun getTrendingDataFromServer(): Flow<ResponseState<GifData>> = flow {
+    override fun getTrendingDataFromServer(): Flow<ResponseState<GifData>> = flow {
 
 
         emit(ResponseState.LOADING())
@@ -65,15 +66,15 @@ class GifRepositoryImpl @Inject constructor(
         }
 
     override suspend fun insertGifIntoDb(gifEntity: GifEntity) {
-        appDao.appDao().insertGif(gifEntity)
+        appDao.insertGif(gifEntity)
     }
 
     override suspend fun fetchAllFavouriteGifFromDb(): List<GifEntity> {
-        return appDao.appDao().fetchAllGifFromDb()
+        return appDao.fetchAllGifFromDb()
     }
 
     override suspend fun removeGifFromDb(gifEntity: GifEntity) {
-        appDao.appDao().removeGifFromDb(gifEntity)
+        appDao.removeGifFromDb(gifEntity)
     }
 
 }

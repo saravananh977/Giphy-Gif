@@ -2,6 +2,7 @@ package com.sara.giphygif.di
 
 import android.app.Application
 import androidx.room.Room
+import com.sara.giphygif.data.localdb.AppDao
 import com.sara.giphygif.data.localdb.AppDb
 import com.sara.giphygif.data.network.ApiInterface
 import com.sara.giphygif.data.repository.GifRepository
@@ -25,9 +26,9 @@ object AppModule {
     @Singleton
     fun provideGifRepository(
         apiInterface: ApiInterface,
-        urlUtils: UrlUtils,appDb: AppDb
+        urlUtils: UrlUtils,appDao: AppDao
     ): GifRepository {
-        return GifRepositoryImpl(apiInterface, urlUtils,appDb)
+        return GifRepositoryImpl(apiInterface, urlUtils,appDao)
     }
 
     @Provides
@@ -48,6 +49,7 @@ object AppModule {
     }
 
     @Provides
+    @Singleton
     fun appDao(appDatabase: AppDb)= appDatabase.appDao()
 
 

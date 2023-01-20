@@ -40,7 +40,7 @@ class MainViewModel @Inject constructor(val repository: GifRepository) : ViewMod
 
     init {
 
-        coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
+        coroutineExceptionHandler = CoroutineExceptionHandler { _, _ ->
 
             viewModelScope.launch {
 

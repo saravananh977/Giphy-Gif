@@ -9,4 +9,5 @@ interface ApiInterface {
     suspend fun getGifData(@Url url: String): GifData
 
 
+
 }

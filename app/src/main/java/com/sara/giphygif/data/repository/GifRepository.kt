@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface GifRepository {
 
-   suspend fun getTrendingDataFromServer(): Flow<ResponseState<GifData>>
+    fun getTrendingDataFromServer(): Flow<ResponseState<GifData>>
 
    suspend fun searchGifFromServer(searchQuery: String): Flow<ResponseState<GifData>>
 

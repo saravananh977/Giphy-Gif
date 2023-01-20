@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import com.sara.giphygif.domain.ResponseState
 import com.sara.giphygif.domain.model.Data
 import com.sara.giphygif.presentation.theme.GiphyTheme
@@ -32,6 +33,25 @@ class MainActivity : AppCompatActivity() {
 
             val coroutineScope = rememberCoroutineScope()
 
+            val context= LocalContext.current
+
+            LaunchedEffect(key1 = pagerState.currentPage, block = {
+
+
+                if (pagerState.currentPage != 0) {
+                    mainViewModel.fetchAllFavouriteGifsFromDb()
+                }
+                else{
+
+                    if (mainViewModel.searchQuery.value.isEmpty()) {
+                        mainViewModel.fetchTrendingGif(context)
+                    } else {
+                        mainViewModel.searchGif(mainViewModel.searchQuery.value,context)
+                    }
+
+                }
+            })
+
             trendingResponseState =
                 mainViewModel.trendindResponseState.collectAsState()
 
@@ -39,16 +59,7 @@ class MainActivity : AppCompatActivity() {
             val favouriteState =
                 mainViewModel.favouriteResponseState.collectAsState()
 
-            if (pagerState.currentPage != 0) {
-                mainViewModel.fetchAllFavouriteGifsFromDb()
-            }
-            else{
-                if (mainViewModel.searchQuery.value.isEmpty()) {
-                    mainViewModel.fetchTrendingGif(this)
-                } else {
-                    mainViewModel.searchGif(mainViewModel.searchQuery.value,this)
-                }
-            }
+
 
 
 
