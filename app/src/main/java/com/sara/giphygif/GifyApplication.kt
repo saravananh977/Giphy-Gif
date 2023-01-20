@@ -9,8 +9,6 @@ class GifyApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
-
-
     }
 
 }

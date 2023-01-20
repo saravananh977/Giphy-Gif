@@ -28,25 +28,32 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
 
-            if (!this::trendingResponseState.isInitialized) {
-                trendingResponseState =
-                    mainViewModel.trendindResponseState.collectAsState(initial = ResponseState.LOADING())
-            }
-
-            val favouriteState = mainViewModel.favouriteResponseState.collectAsState(emptyList())
-
             val pagerState = rememberPagerState(initialPage = 0)
 
             val coroutineScope = rememberCoroutineScope()
 
+            trendingResponseState =
+                mainViewModel.trendindResponseState.collectAsState()
+
+
+            val favouriteState =
+                mainViewModel.favouriteResponseState.collectAsState()
+
             if (pagerState.currentPage != 0) {
                 mainViewModel.fetchAllFavouriteGifsFromDb()
             }
+            else{
+                if (mainViewModel.searchQuery.value.isEmpty()) {
+                    mainViewModel.fetchTrendingGif(this)
+                } else {
+                    mainViewModel.searchGif(mainViewModel.searchQuery.value,this)
+                }
+            }
 
-            mainViewModel.fetchTrendingGif()
 
 
             GiphyTheme {
+
 
                 Column() {
 

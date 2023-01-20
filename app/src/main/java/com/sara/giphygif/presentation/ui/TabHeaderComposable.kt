@@ -25,7 +25,7 @@ fun TabHeaderComposable(
     TabRow(
 
         selectedTabIndex = pagerState.currentPage,
-        modifier = Modifier.padding(vertical = 8.dp),
+        modifier = Modifier.padding(vertical = 18.dp),
         backgroundColor = MaterialTheme.colors.background,
 
         contentColor = MaterialTheme.colors.primary,
@@ -33,7 +33,7 @@ fun TabHeaderComposable(
         indicator = { tabPositions ->
             TabRowDefaults.Indicator(
                 modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                height = 4.dp,
+                height = 3.dp,
                 color = Color.DarkGray
             )
         }

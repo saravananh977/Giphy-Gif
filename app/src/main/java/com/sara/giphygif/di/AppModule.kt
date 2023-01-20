@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.room.Room
 import com.sara.giphygif.data.localdb.AppDb
 import com.sara.giphygif.data.network.ApiInterface
-import com.sara.giphygif.data.repository.TrendingSearchRepository
-import com.sara.giphygif.data.repository.TrendingSearchRepositoryImpl
+import com.sara.giphygif.data.repository.GifRepository
+import com.sara.giphygif.data.repository.GifRepositoryImpl
 import com.sara.giphygif.utils.Constants
 import com.sara.giphygif.utils.UrlUtils
 import dagger.Module
@@ -23,11 +23,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTrendingSearchRepository(
+    fun provideGifRepository(
         apiInterface: ApiInterface,
         urlUtils: UrlUtils,appDb: AppDb
-    ): TrendingSearchRepository {
-        return TrendingSearchRepositoryImpl(apiInterface, urlUtils,appDb)
+    ): GifRepository {
+        return GifRepositoryImpl(apiInterface, urlUtils,appDb)
     }
 
     @Provides
@@ -49,5 +49,6 @@ object AppModule {
 
     @Provides
     fun appDao(appDatabase: AppDb)= appDatabase.appDao()
+
 
 }

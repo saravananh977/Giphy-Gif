@@ -1,6 +1,8 @@
 package com.sara.giphygif.data.repository
 
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.sara.giphygif.data.entities.GifEntity
 import com.sara.giphygif.data.localdb.AppDb
 import com.sara.giphygif.data.network.ApiInterface
@@ -13,12 +15,14 @@ import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 
-class TrendingSearchRepositoryImpl @Inject constructor(
+class GifRepositoryImpl @Inject constructor(
     val apiInterface: ApiInterface,
     val urlUtils: UrlUtils, val appDao: AppDb
-) : TrendingSearchRepository {
+) : GifRepository {
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override suspend fun getTrendingDataFromServer(): Flow<ResponseState<GifData>> = flow {
+
 
         emit(ResponseState.LOADING())
 

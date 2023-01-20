@@ -5,7 +5,7 @@ import com.sara.giphygif.domain.ResponseState
 import com.sara.giphygif.domain.model.GifData
 import kotlinx.coroutines.flow.Flow
 
-interface TrendingSearchRepository {
+interface GifRepository {
 
    suspend fun getTrendingDataFromServer(): Flow<ResponseState<GifData>>
 

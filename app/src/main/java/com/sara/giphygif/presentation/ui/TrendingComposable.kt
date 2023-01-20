@@ -3,6 +3,7 @@
 package com.sara.giphygif.presentation.ui
 
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.ComponentRegistry
@@ -31,14 +33,17 @@ import com.sara.giphygif.data.entities.GifEntity
 import com.sara.giphygif.domain.ResponseState
 import com.sara.giphygif.domain.model.Data
 import com.sara.giphygif.presentation.MainViewModel
+import com.sara.giphygif.utils.ErrorMessageComposable
 import com.sara.giphygif.utils.Loader
 
+@RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun TrendingComposable(
     trendingResponseState: State<ResponseState<List<Data>>>
 ) {
 
     val mainViewModel = hiltViewModel<MainViewModel>()
+    val context = LocalContext.current
 
 
     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -59,10 +64,10 @@ fun TrendingComposable(
                 value = mainViewModel.searchQuery.value,
                 onValueChange = {
 
-                    if (it.isNotEmpty()) {
-                        mainViewModel.searchGif(it)
+                    if (it.isEmpty()) {
+                        mainViewModel.clearSearch(context)
                     } else {
-                        mainViewModel.clearSearch()
+                        mainViewModel.searchGif(it,context)
                     }
 
                 },
@@ -73,13 +78,13 @@ fun TrendingComposable(
                     .align(Alignment.CenterVertically)
                     .weight(6f),
 
-                colors = TextFieldDefaults.textFieldColors(
+                colors = TextFieldDefaults.textFieldColors(textColor=MaterialTheme.colors.primary,
                     backgroundColor = MaterialTheme.colors.surface,
                     disabledLabelColor = MaterialTheme.colors.primary,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ), placeholder = {
-                    Text(text = "Search...")
+                    Text(text = stringResource(id = R.string.search_hint), color = MaterialTheme.colors.primary)
                 }
             )
 
@@ -98,7 +103,7 @@ fun TrendingComposable(
 
                     IconButton(
                         onClick = {
-                            mainViewModel.clearSearch()
+                            mainViewModel.clearSearch(context)
 
                         },
                         modifier = Modifier
@@ -127,7 +132,10 @@ fun TrendingComposable(
 
             is ResponseState.SUCCESS -> {
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth(1f)) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(1f)
+                ) {
 
                     trendingResponseState.value.list?.let {
 
@@ -146,7 +154,8 @@ fun TrendingComposable(
                         LazyColumn(
                             modifier = Modifier
                                 .padding(16.dp)
-                                .align(Alignment.CenterHorizontally).fillMaxWidth(1f),
+                                .align(Alignment.CenterHorizontally)
+                                .fillMaxWidth(1f),
                             content = {
                                 items(items = it, itemContent = {
 
@@ -156,20 +165,16 @@ fun TrendingComposable(
                                             1.dp,
                                             Color.LightGray,
                                             RoundedCornerShape(5.dp)
-                                        ).align(Alignment.CenterHorizontally), onClick = {
-
-                                        mainViewModel.addToFavourite(
-                                            GifEntity(
-                                                it.id,
-                                                it.title,
-                                                it.type,
-                                                it.images.original.url
-                                            )
                                         )
+                                        .align(Alignment.CenterHorizontally), onClick = {
+
 
                                     }) {
 
-                                        Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                        Box(
+                                            contentAlignment = Alignment.TopEnd,
+                                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                                        ) {
 
                                             Image(
                                                 painter = rememberImagePainter(
@@ -182,29 +187,36 @@ fun TrendingComposable(
                                                 contentDescription = null
                                             )
 
-                                                IconButton(onClick = {
+                                            IconButton(onClick = {
 
-                                                    if (it.isFavourite) {
+                                                val gifEntity = GifEntity(
+                                                    it.id,
+                                                    it.title,
+                                                    it.type,
+                                                    it.images.original.url
+                                                )
 
-                                                        it.isFavourite = false
+                                                if (it.isFavourite) {
+                                                    mainViewModel.removeFromFavourite(gifEntity)
 
-                                                    } else {
-                                                        it.isFavourite = true
-
-                                                    }
-                                                }) {
-
-                                                    Icon(
-                                                        painter = if (it.isFavourite) painterResource(
-                                                            id = R.drawable.ic_favourite_selected
-                                                        ) else painterResource(
-                                                            id = R.drawable.ic_favourite
-                                                        ),
-                                                        contentDescription = ""
+                                                } else {
+                                                    mainViewModel.addToFavourite(
+                                                        gifEntity
                                                     )
-
                                                 }
 
+                                            }) {
+
+                                                Icon(
+                                                    painter = if (it.isFavourite) painterResource(
+                                                        id = R.drawable.ic_favourite_selected
+                                                    ) else painterResource(
+                                                        id = R.drawable.ic_favourite
+                                                    ),
+                                                    contentDescription = "", tint = Color.Magenta
+                                                )
+
+                                            }
 
 
                                         }
@@ -217,6 +229,11 @@ fun TrendingComposable(
 
                 }
 
+            }
+
+            is ResponseState.FAILURE ->{
+
+                trendingResponseState.value.message?.let { ErrorMessageComposable(errorMessage = it) }
             }
 
             else -> {

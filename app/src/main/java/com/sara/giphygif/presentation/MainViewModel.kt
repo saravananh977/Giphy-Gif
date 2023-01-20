@@ -1,92 +1,165 @@
 package com.sara.giphygif.presentation
 
+import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sara.giphygif.R
 import com.sara.giphygif.data.entities.GifEntity
-import com.sara.giphygif.data.repository.TrendingSearchRepository
+import com.sara.giphygif.data.repository.GifRepository
 import com.sara.giphygif.domain.ResponseState
 import com.sara.giphygif.domain.model.Data
+import com.sara.giphygif.utils.isConnectedToInternet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(val repository: TrendingSearchRepository) : ViewModel() {
+class MainViewModel @Inject constructor(val repository: GifRepository) : ViewModel() {
 
 
     var searchQuery = mutableStateOf("")
 
-    val trendindResponseState = MutableSharedFlow<ResponseState<List<Data>>>()
+    val trendindResponseState = MutableStateFlow<ResponseState<List<Data>>>(ResponseState.START())
 
-    val favouriteResponseState = MutableSharedFlow<List<GifEntity>>()
+    val favouriteResponseState = MutableStateFlow<List<GifEntity>>(emptyList())
 
+    var trendingListDataClone = ArrayList<Data>()
+
+    lateinit var favouriteFromDb: List<GifEntity>
 
     private var searchJob: Job? = null
 
-
-//    init {
-//        fetchTrendingGif()
-//    }
-
-    fun fetchTrendingGif() {
-
-        viewModelScope.launch {
-
-            withContext(Dispatchers.IO) {
-
-                val remoteWordInfos = repository.getTrendingDataFromServer()
+    val coroutineExceptionHandler: CoroutineExceptionHandler
 
 
-                remoteWordInfos.onEach {
+    init {
 
-                    when (it) {
+        coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
 
-                        is ResponseState.SUCCESS -> {
-
-                            trendindResponseState.emit(ResponseState.SUCCESS(it.list?.data!!))
-
-                        }
-
-                        is ResponseState.LOADING -> {
-
-                            trendindResponseState.emit(ResponseState.LOADING())
-
-                        }
-
-                        is ResponseState.FAILURE -> {
-
-                            trendindResponseState.emit(ResponseState.FAILURE(message = it.message!!))
-
-                        }
-
-                        is ResponseState.START -> {
-
-
-                        }
-                    }
-
-                }.launchIn(this)
-
+            viewModelScope.launch {
 
             }
         }
 
     }
 
+    fun fetchTrendingGif(context: Context) {
 
-    fun addToFavourite(gifEntity: GifEntity){
+        viewModelScope.launch(coroutineExceptionHandler) {
 
-        viewModelScope.launch {
+            if (isConnectedToInternet(context)) {
 
-            withContext(Dispatchers.IO){
+
+                withContext(Dispatchers.IO) {
+
+                    val remoteWordInfos = repository.getTrendingDataFromServer()
+
+
+                    remoteWordInfos.onEach {
+
+                        when (it) {
+
+                            is ResponseState.SUCCESS -> {
+
+                                trendingListDataClone.clear()
+
+                                val trendingListData = (it.list?.data as ArrayList<Data>?)!!
+
+                                favouriteFromDb = repository.fetchAllFavouriteGifFromDb()
+
+                                if (favouriteFromDb.isNotEmpty()) {
+
+                                    trendingListData.forEach { data ->
+
+                                        var isFavourite = false
+
+                                        favouriteFromDb.forEach {
+
+                                            if (data.id == it.id) {
+
+                                                isFavourite = true
+
+                                            }
+                                        }
+
+                                        if (isFavourite) {
+                                            data.isFavourite = true
+                                        }
+
+                                        trendingListDataClone.add(data)
+
+                                    }
+                                } else {
+                                    trendingListDataClone.addAll(trendingListData)
+                                }
+
+
+                                trendindResponseState.emit(
+                                    ResponseState.SUCCESS(
+                                        trendingListDataClone
+                                    )
+                                )
+
+                            }
+
+                            is ResponseState.LOADING -> {
+
+                                trendindResponseState.emit(ResponseState.LOADING())
+
+                            }
+
+                            is ResponseState.FAILURE -> {
+
+                                trendindResponseState.emit(ResponseState.FAILURE(message = it.message!!))
+
+                            }
+
+                            is ResponseState.START -> {
+
+
+                            }
+                        }
+
+                    }.launchIn(this)
+
+
+                }
+            } else {
+
+                trendindResponseState.emit(ResponseState.FAILURE(context.getString(R.string.no_internet)))
+
+            }
+
+        }
+
+
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun addToFavourite(gifEntity: GifEntity) {
+
+        viewModelScope.launch(coroutineExceptionHandler) {
+
+            withContext(Dispatchers.IO) {
 
                 repository.insertGifIntoDb(gifEntity)
 
-                favouriteResponseState.emit( repository.fetchAllFavouriteGifFromDb())
+                favouriteResponseState.emit(repository.fetchAllFavouriteGifFromDb())
+
+                val data = trendingListDataClone.find {
+                    it.id == gifEntity.id
+                }
+
+                data?.isFavourite = true
+
+                trendindResponseState.emit(ResponseState.SUCCESS(trendingListDataClone))
 
             }
 
@@ -96,94 +169,151 @@ class MainViewModel @Inject constructor(val repository: TrendingSearchRepository
     }
 
 
-    fun removeFromFavourite(gifEntity: GifEntity){
+    fun removeFromFavourite(gifEntity: GifEntity) {
 
-        viewModelScope.launch {
-
-            withContext(Dispatchers.IO){
-
-                repository.removeGifFromDb(gifEntity)
-
-                favouriteResponseState.emit( repository.fetchAllFavouriteGifFromDb())
-
-            }
-
-        }
-
-
-    }
-
-
-    fun fetchAllFavouriteGifsFromDb(){
-
-        viewModelScope.launch {
-
-            withContext(Dispatchers.IO){
-
-                favouriteResponseState.emit( repository.fetchAllFavouriteGifFromDb())
-
-            }
-
-        }
-
-    }
-
-
-    fun searchGif(query: String) {
-
-        searchQuery.value = query
-
-        searchJob?.cancel()
-
-        searchJob = viewModelScope.launch {
-
-            delay(500L)
+        viewModelScope.launch(coroutineExceptionHandler) {
 
             withContext(Dispatchers.IO) {
 
-                val remoteWordInfos = repository.searchGifFromServer(query)
+                repository.removeGifFromDb(gifEntity)
 
+                favouriteResponseState.emit(repository.fetchAllFavouriteGifFromDb())
 
-                remoteWordInfos.onEach {
+                val data = trendingListDataClone.find {
+                    it.id == gifEntity.id
+                }
 
-                    when (it) {
+                data?.isFavourite = false
 
-                        is ResponseState.SUCCESS -> {
-
-                            trendindResponseState.emit(ResponseState.SUCCESS(it.list?.data!!))
-
-                        }
-
-                        is ResponseState.LOADING -> {
-
-                            trendindResponseState.emit(ResponseState.LOADING())
-
-                        }
-
-                        is ResponseState.FAILURE -> {
-
-                            trendindResponseState.emit(ResponseState.FAILURE(message = it.message!!))
-
-                        }
-
-                        is ResponseState.START -> {
-
-
-                        }
-                    }
-
-                }.launchIn(this)
+                trendindResponseState.emit(ResponseState.SUCCESS(trendingListDataClone))
 
 
             }
+
+        }
+
+
+    }
+
+
+    fun fetchAllFavouriteGifsFromDb() {
+
+        viewModelScope.launch(coroutineExceptionHandler) {
+
+            withContext(Dispatchers.IO) {
+
+                favouriteResponseState.emit(repository.fetchAllFavouriteGifFromDb())
+
+            }
+
         }
 
     }
 
 
-    fun clearSearch() {
+    fun searchGif(query: String, context: Context) {
+
+        searchJob?.cancel()
+
+        searchQuery.value = query
+
+        if (isConnectedToInternet(context)) {
+
+            searchJob = viewModelScope.launch(coroutineExceptionHandler) {
+
+                delay(500L)
+
+                withContext(Dispatchers.IO) {
+
+                    val remoteWordInfos = repository.searchGifFromServer(query)
+
+
+                    remoteWordInfos.onEach {
+
+                        when (it) {
+
+                            is ResponseState.SUCCESS -> {
+
+
+                                trendingListDataClone.clear()
+
+                                val trendingListData = (it.list?.data as ArrayList<Data>?)!!
+
+                                favouriteFromDb = repository.fetchAllFavouriteGifFromDb()
+
+                                if (favouriteFromDb.isNotEmpty()) {
+
+                                    trendingListData.forEach { data ->
+
+                                        var isFavourite = false
+
+                                        favouriteFromDb.forEach {
+
+                                            if (data.id == it.id) {
+
+                                                isFavourite = true
+
+                                            }
+                                        }
+
+                                        if (isFavourite) {
+                                            data.isFavourite = true
+                                        }
+
+                                        trendingListDataClone.add(data)
+
+                                    }
+                                } else {
+                                    trendingListDataClone.addAll(trendingListData)
+                                }
+
+
+                                trendindResponseState.emit(
+                                    ResponseState.SUCCESS(
+                                        trendingListDataClone
+                                    )
+                                )
+
+                            }
+
+                            is ResponseState.LOADING -> {
+
+                                trendindResponseState.emit(ResponseState.LOADING())
+
+                            }
+
+                            is ResponseState.FAILURE -> {
+
+                                trendindResponseState.emit(ResponseState.FAILURE(message = it.message!!))
+
+                            }
+
+                            is ResponseState.START -> {
+
+
+                            }
+                        }
+
+                    }.launchIn(this)
+
+
+                }
+            }
+
+        } else {
+            viewModelScope.launch {
+                trendindResponseState.emit(ResponseState.FAILURE(context.getString(R.string.no_internet)))
+            }
+
+        }
+
+    }
+
+
+    fun clearSearch(context: Context) {
         searchQuery.value = ""
-        fetchTrendingGif()
+        searchJob?.cancel()
+        fetchTrendingGif(context)
     }
 
 }
