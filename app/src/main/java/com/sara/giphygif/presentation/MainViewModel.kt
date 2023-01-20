@@ -79,14 +79,19 @@ class MainViewModel @Inject constructor(val repository: GifRepository) : ViewMod
 
                                         var isFavourite = false
 
-                                        favouriteFromDb.forEach {
+                                        run breaking@{
+                                            favouriteFromDb.forEach {
 
-                                            if (data.id == it.id) {
+                                                if (data.id == it.id) {
 
-                                                isFavourite = true
+                                                    isFavourite = true
 
+                                                    return@breaking
+
+                                                }
                                             }
                                         }
+
 
                                         if (isFavourite) {
                                             data.isFavourite = true
@@ -247,14 +252,19 @@ class MainViewModel @Inject constructor(val repository: GifRepository) : ViewMod
 
                                         var isFavourite = false
 
-                                        favouriteFromDb.forEach {
+                                        run breaking@{
+                                            favouriteFromDb.forEach {
 
-                                            if (data.id == it.id) {
+                                                if (data.id == it.id) {
 
-                                                isFavourite = true
+                                                    isFavourite = true
 
+                                                    return@breaking
+
+                                                }
                                             }
                                         }
+
 
                                         if (isFavourite) {
                                             data.isFavourite = true
